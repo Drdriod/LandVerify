@@ -34,6 +34,10 @@ db_pool = None
 
 # ── Database Setup ─────────────────────────────────────────────
 async def init_db():
+    @asynccontextmanager
+async def lifespan(app: app = FastAPI(lifespan=lifespan)):
+    await init_db()
+    yield
     global db_pool
     if not DB_AVAILABLE or not DATABASE_URL:
         logger.warning("No database URL — running without persistence")
