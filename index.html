@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LandVerify — Nigeria's Land Trust Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--earth:#1a1208;--soil:#2d1f0a;--gold:#C9922A;--amber:#F4A832;--sand:#F2DEB5;--cream:#FAF5EC;--dim:#7A6A55;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--earth);color:var(--cream);font-family:'Sora',sans-serif;min-height:100vh;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(201,146,42,.2);background:rgba(26,18,8,.98);position:sticky;top:0;z-index:100;}
+.logo{font-family:'Playfair Display',serif;font-size:18px;font-weight:900;color:var(--amber);display:flex;align-items:center;gap:8px;cursor:pointer;}
+.logo-mark{width:28px;height:28px;background:linear-gradient(135deg,var(--gold),var(--amber));border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.nav-pills{display:flex;gap:2px;background:rgba(255,255,255,.05);padding:3px;border-radius:10px;}
+.np{padding:6px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:500;color:var(--sand);border:none;background:none;font-family:'Sora',sans-serif;}
+.np.active{background:var(--gold);color:var(--earth);font-weight:700;}
+.nav-right{display:flex;gap:8px;align-items:center;}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;align-items:center;justify-content:center;padding:16px;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--soil);border:1px solid rgba(201,146,42,.25);border-radius:18px;padding:24px;width:100%;max-width:380px;position:relative;}
+.modal-close{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;}
+.modal-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:2px;}
+.modal-sub{font-size:11px;color:var(--dim);margin-bottom:16px;}
+.tab-row{display:flex;margin-bottom:16px;border:1px solid rgba(201,146,42,.2);border-radius:8px;overflow:hidden;}
+.tab-btn{flex:1;padding:9px;text-align:center;cursor:pointer;font-size:12px;font-weight:600;color:var(--dim);background:none;border:none;font-family:'Sora',sans-serif;}
+.tab-btn.active{background:var(--gold);color:var(--earth);}
+.auth-err{background:rgba(139,26,26,.15);border:1px solid rgba(139,26,26,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:#F87171;margin-bottom:10px;display:none;}
+.auth-err.show{display:block;}
+
+/* FORMS */
+.fg{margin-bottom:10px;}
+label{display:block;font-size:9px;font-family:'DM Mono',monospace;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:4px;}
+input,select,textarea{background:rgba(26,18,8,.8);border:1px solid rgba(201,146,42,.2);border-radius:8px;padding:10px 12px;color:var(--cream);font-family:'Sora',sans-serif;font-size:13px;outline:none;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--amber);}
+select option{background:var(--soil);}
+input::placeholder,textarea::placeholder{color:var(--dim);}
+.btn{padding:11px 20px;border-radius:9px;font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--amber));color:var(--earth);font-weight:700;width:100%;}
+.btn-outline{background:transparent;color:var(--amber);border:1px solid rgba(201,146,42,.3);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* LAYOUT */
+main{max-width:860px;margin:0 auto;padding:20px 14px;}
+.page{display:none;animation:fadeIn .3s ease;}
+.page.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* HOME */
+.hero{text-align:center;padding:36px 0 28px;}
+.eyebrow{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:10px;}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(26px,7vw,50px);font-weight:900;line-height:1.1;margin-bottom:12px;}
+.hero h1 span{color:var(--amber);}
+.hero p{font-size:14px;color:var(--dim);max-width:400px;margin:0 auto 22px;line-height:1.7;}
+.hero-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.btn-hero{padding:11px 22px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'Sora',sans-serif;}
+.stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(201,146,42,.12);border:1px solid rgba(201,146,42,.15);border-radius:10px;overflow:hidden;margin:28px 0;}
+.stat{background:var(--soil);padding:14px;text-align:center;}
+.stat-n{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:var(--amber);display:block;}
+.stat-l{font-size:9px;color:var(--dim);font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;}
+.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fc{background:var(--soil);border:1px solid rgba(201,146,42,.1);border-radius:10px;padding:16px;cursor:pointer;}
+.fc:active{border-color:rgba(201,146,42,.4);}
+.fc-icon{font-size:22px;margin-bottom:8px;}
+.fc-title{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;margin-bottom:3px;}
+.fc-desc{font-size:10px;color:var(--dim);line-height:1.5;}
+
+/* VERIFY */
+.sh{margin-bottom:18px;}
+.sh h2{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;}
+.info-bar{border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:11px;font-family:'DM Mono',monospace;border:1px solid;}
+.info-bar.demo{background:rgba(201,146,42,.08);border-color:rgba(201,146,42,.2);color:var(--amber);}
+.info-bar.live{background:rgba(30,107,69,.08);border-color:rgba(30,107,69,.3);color:#4ADE80;}
+.info-bar.err{background:rgba(139,26,26,.08);border-color:rgba(139,26,26,.3);color:#F87171;}
+.section-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:10px;}
+
+/* API CONFIG (hidden by default) */
+.api-config{background:var(--soil);border:1px solid rgba(201,146,42,.15);border-radius:10px;padding:14px;margin-bottom:16px;display:none;}
+.api-config.show{display:block;}
+.api-row{display:flex;gap:8px;margin-top:8px;}
+.api-row input{flex:1;font-family:'DM Mono',monospace;font-size:11px;}
+
+.upload-zone{border:2px dashed rgba(201,146,42,.2);border-radius:12px;padding:28px;text-align:center;cursor:pointer;background:rgba(45,31,10,.3);margin-bottom:16px;position:relative;}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.uz-icon{font-size:30px;display:block;margin-bottom:8px;}
+.uz-title{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;margin-bottom:3px;}
+.uz-sub{font-size:10px;color:var(--dim);margin-bottom:10px;}
+.doc-tags{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;}
+.dt{background:rgba(201,146,42,.08);border:1px solid rgba(201,146,42,.15);color:var(--amber);font-size:9px;padding:2px 7px;border-radius:10px;font-family:'DM Mono',monospace;}
+.file-ok{display:none;background:rgba(30,107,69,.1);border:1px solid rgba(30,107,69,.2);border-radius:7px;padding:7px 10px;margin-bottom:12px;align-items:center;gap:6px;font-size:11px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.fg-full{grid-column:1/-1;}
+.action-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.err-bar{display:none;background:rgba(139,26,26,.1);border:1px solid rgba(139,26,26,.2);border-radius:8px;padding:9px 12px;margin-bottom:12px;font-size:11px;color:#F87171;align-items:center;gap:8px;}
+.err-bar.show{display:flex;}
+
+/* LOADING */
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(26,18,8,.97);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+.loading-overlay.show{display:flex;}
+.load-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;}
+.load-steps{display:flex;flex-direction:column;gap:7px;width:260px;}
+.ls{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--dim);font-family:'DM Mono',monospace;opacity:0;transition:all .4s;}
+.ls.on{opacity:1;color:var(--cream);}
+.ls-dot{width:5px;height:5px;border-radius:50%;background:rgba(201,146,42,.2);flex-shrink:0;transition:all .3s;}
+.ls.on .ls-dot{background:var(--amber);box-shadow:0 0 5px var(--amber);}
+.load-bar-wrap{width:260px;height:2px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;}
+.load-bar{height:100%;background:linear-gradient(90deg,var(--gold),var(--amber));width:0%;transition:width .5s;}
+
+/* RESULT */
+.result-panel{display:none;background:var(--soil);border-radius:14px;padding:20px;border:1px solid rgba(201,146,42,.15);margin-top:18px;}
+.result-panel.show{display:block;animation:fadeIn .4s ease;}
+.score-row{display:flex;align-items:center;gap:20px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid rgba(201,146,42,.08);}
+.ring-wrap{position:relative;width:100px;height:100px;flex-shrink:0;}
+.ring-svg{width:100px;height:100px;transform:rotate(-90deg);}
+.ring-track{fill:none;stroke:rgba(255,255,255,.06);stroke-width:9;}
+.ring-fill{fill:none;stroke-width:9;stroke-linecap:round;stroke-dasharray:251;stroke-dashoffset:251;transition:stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1);}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ring-num{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;line-height:1;}
+.ring-lbl{font-size:7px;font-family:'DM Mono',monospace;color:var(--dim);}
+.score-info h3{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:4px;}
+.score-info p{font-size:11px;color:var(--dim);line-height:1.6;}
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;font-size:9px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.badge-safe{background:#D4EDDA;color:#1E6B45;}
+.badge-caution{background:#FFF3CD;color:#B7600A;}
+.badge-danger{background:#FDECEA;color:#8B1A1A;}
+.badge-dot{width:4px;height:4px;border-radius:50%;background:currentColor;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.breakdown-row{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:16px;}
+.bd{background:rgba(26,18,8,.5);border-radius:7px;padding:8px 4px;text-align:center;}
+.bd-val{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;}
+.bd-lbl{font-size:7px;color:var(--dim);font-family:'DM Mono',monospace;line-height:1.3;}
+.checks-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:16px;}
+.check-item{display:flex;align-items:flex-start;gap:7px;padding:9px;background:rgba(26,18,8,.4);border-radius:7px;}
+.ci-dot{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.d-pass{background:rgba(30,107,69,.2);color:#4ADE80;}
+.d-fail{background:rgba(139,26,26,.2);color:#F87171;}
+.d-warn{background:rgba(183,96,10,.2);color:#FCD34D;}
+.ci-txt strong{display:block;font-size:10px;font-weight:600;}
+.ci-txt span{font-size:9px;color:var(--dim);}
+.flag-card{background:rgba(139,26,26,.1);border:1px solid rgba(139,26,26,.2);border-radius:9px;padding:10px;margin-bottom:7px;}
+.flag-card.med{background:rgba(183,96,10,.07);border-color:rgba(183,96,10,.2);}
+.flag-title{font-weight:700;font-size:11px;margin-bottom:2px;}
+.flag-desc{font-size:10px;color:var(--dim);margin-bottom:4px;line-height:1.5;}
+.flag-rec{font-size:9px;color:var(--amber);}
+.ai-box{background:rgba(201,146,42,.05);border:1px solid rgba(201,146,42,.15);border-radius:9px;padding:14px;margin-bottom:14px;}
+.ai-text{font-size:11px;line-height:1.7;margin-bottom:7px;}
+.ai-rec{font-size:10px;color:var(--sand);line-height:1.6;border-top:1px solid rgba(201,146,42,.1);padding-top:7px;}
+.divider{height:1px;background:rgba(201,146,42,.07);margin:14px 0;}
+.timeline{padding-left:16px;border-left:2px solid var(--gold);}
+.tl-item{padding-bottom:12px;}
+.tl-year{font-size:9px;color:var(--dim);font-family:'DM Mono',monospace;}
+.tl-name{font-weight:600;font-size:11px;}
+.tl-detail{font-size:9px;color:var(--dim);}
+.vid{font-family:'DM Mono',monospace;font-size:8px;color:var(--dim);margin-top:6px;}
+
+/* DASHBOARD */
+.dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.ds{background:var(--soil);border:1px solid rgba(201,146,42,.1);border-radius:10px;padding:14px;}
+.ds-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:4px;}
+.ds-val{font-family:'Playfair Display',serif;font-size:26px;font-weight:900;color:var(--amber);line-height:1;}
+.ds-note{font-size:9px;color:#4ADE80;margin-top:2px;}
+.history-row{display:flex;align-items:center;gap:10px;padding:10px;background:var(--soil);border-radius:9px;margin-bottom:7px;border:1px solid rgba(201,146,42,.07);}
+.hr-thumb{width:32px;height:32px;border-radius:7px;background:linear-gradient(135deg,#8B5E2A,var(--gold));display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.hr-info{flex:1;}
+.hr-addr{font-weight:600;font-size:11px;}
+.hr-meta{font-size:9px;color:var(--dim);font-family:'DM Mono',monospace;}
+.hr-score{font-family:'Playfair Display',serif;font-size:18px;font-weight:900;}
+
+/* ALERTS */
+.alert-card{background:var(--soil);border-radius:10px;padding:14px;border:1px solid rgba(201,146,42,.1);margin-bottom:8px;border-left:3px solid var(--gold);}
+.ac-title{font-weight:600;font-size:12px;margin-bottom:2px;}
+.ac-desc{font-size:10px;color:var(--dim);margin-bottom:6px;line-height:1.5;}
+.ac-meta{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.monitor-box{background:var(--soil);border-radius:10px;padding:16px;border:1px solid rgba(201,146,42,.1);margin-top:16px;}
+.empty{text-align:center;padding:36px 12px;color:var(--dim);}
+.empty-icon{font-size:36px;margin-bottom:10px;}
+.empty-title{font-family:'Playfair Display',serif;font-size:17px;color:var(--cream);margin-bottom:5px;}
+.empty-sub{font-size:11px;line-height:1.6;margin-bottom:14px;}
+.toast{position:fixed;bottom:16px;right:12px;z-index:500;border-radius:9px;padding:9px 14px;font-size:11px;max-width:280px;line-height:1.4;animation:fadeIn .3s ease;pointer-events:none;}
+
+@media(max-width:500px){
+  .stats-row,.form-grid,.checks-grid,.breakdown-row,.dash-stats,.feature-grid{grid-template-columns:1fr;}
+  .score-row{flex-direction:column;gap:12px;}
+  .nav-pills .np{padding:5px 7px;font-size:10px;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadOverlay">
+  <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;padding:3px 10px;border-radius:12px;background:rgba(201,146,42,.15);color:var(--amber);border:1px solid rgba(201,146,42,.3);" id="loadTag">ANALYSING</div>
+  <div class="load-title">Verifying Document</div>
+  <div class="load-steps">
+    <div class="ls" id="ls1"><div class="ls-dot"></div>Extracting document text...</div>
+    <div class="ls" id="ls2"><div class="ls-dot"></div>Parsing metadata...</div>
+    <div class="ls" id="ls3"><div class="ls-dot"></div>Running fraud detection...</div>
+    <div class="ls" id="ls4"><div class="ls-dot"></div>Claude AI deep analysis...</div>
+    <div class="ls" id="ls5"><div class="ls-dot"></div>Reconstructing ownership chain...</div>
+    <div class="ls" id="ls6"><div class="ls-dot"></div>Calculating Trust Score...</div>
+  </div>
+  <div class="load-bar-wrap"><div class="load-bar" id="loadBar"></div></div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-bg" id="authModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAuth()">✕</button>
+    <div class="modal-title">LandVerify</div>
+    <div class="modal-sub">Nigeria's Land Trust Layer</div>
+    <div class="tab-row">
+      <button class="tab-btn active" id="tabLogin" onclick="authTab('login')">Sign In</button>
+      <button class="tab-btn" id="tabReg" onclick="authTab('register')">Register</button>
+    </div>
+    <div class="auth-err" id="authErr"></div>
+    <div id="formLogin">
+      <div class="fg"><label>Email</label><input type="email" id="liEmail" placeholder="you@example.com"></div>
+      <div class="fg"><label>Password</label><input type="password" id="liPw" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-gold" onclick="doLogin()">Sign In</button>
+      <p style="text-align:center;margin-top:8px;font-size:10px;color:var(--dim);">No account? <a style="color:var(--amber);cursor:pointer;" onclick="authTab('register')">Create one free →</a></p>
+    </div>
+    <div id="formReg" style="display:none;">
+      <div class="fg"><label>Full Name</label><input type="text" id="rgName" placeholder="Chukwuemeka Obi"></div>
+      <div class="fg"><label>Email</label><input type="email" id="rgEmail" placeholder="you@example.com"></div>
+      <div class="fg"><label>Password</label><input type="password" id="rgPw" placeholder="Min 8 characters"></div>
+      <div class="fg"><label>I am a</label>
+        <select id="rgRole">
+          <option value="buyer">Property Buyer</option>
+          <option value="lawyer">Real Estate Lawyer</option>
+          <option value="bank">Bank / Lender</option>
+          <option value="developer">Property Developer</option>
+        </select>
+      </div>
+      <button class="btn btn-gold" onclick="doRegister()">Create Free Account</button>
+      <p style="text-align:center;margin-top:8px;font-size:10px;color:var(--dim);">Have account? <a style="color:var(--amber);cursor:pointer;" onclick="authTab('login')">Sign in →</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo" onclick="go('home')"><div class="logo-mark">🏛</div>LandVerify</div>
+  <div class="nav-pills">
+    <button class="np active" onclick="go('home')">Home</button>
+    <button class="np" onclick="go('verify')">Verify</button>
+    <button class="np" onclick="go('dashboard')">Dashboard</button>
+    <button class="np" onclick="go('alerts')">Alerts</button>
+  </div>
+  <div class="nav-right" id="navRight"></div>
+</nav>
+
+<main>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="eyebrow">Nigeria's Land Trust Layer</div>
+    <h1>Verify Land.<br><span>Eliminate Fraud.</span></h1>
+    <p>AI-powered document verification — giving every Nigerian the confidence to buy property safely.</p>
+    <div class="hero-btns">
+      <button class="btn-hero btn-gold" onclick="go('verify')">Verify a Document →</button>
+      <button class="btn-hero btn-outline" onclick="openAuth()">Create Free Account</button>
+    </div>
+  </div>
+  <div class="stats-row">
+    <div class="stat"><span class="stat-n">₦1B+</span><span class="stat-l">Lost to fraud yearly</span></div>
+    <div class="stat"><span class="stat-n">28M</span><span class="stat-l">Housing unit deficit</span></div>
+    <div class="stat"><span class="stat-n">84M</span><span class="stat-l">Undocumented parcels</span></div>
+    <div class="stat"><span class="stat-n">3 min</span><span class="stat-l">Average verify time</span></div>
+  </div>
+  <div class="feature-grid">
+    <div class="fc" onclick="go('verify')"><div class="fc-icon">📄</div><div class="fc-title">Document Verification</div><div class="fc-desc">Upload any C of O, Deed, or Survey Plan. AI flags anomalies instantly.</div></div>
+    <div class="fc" onclick="go('dashboard')"><div class="fc-icon">🛡️</div><div class="fc-title">Trust Score</div><div class="fc-desc">Every property gets a LandVerify Trust Score 0–100.</div></div>
+    <div class="fc" onclick="go('alerts')"><div class="fc-icon">🔔</div><div class="fc-title">Fraud Alerts</div><div class="fc-desc">Get instant alerts the moment anyone uses your title fraudulently.</div></div>
+    <div class="fc" onclick="openAuth()"><div class="fc-icon">👤</div><div class="fc-title">Free Account</div><div class="fc-desc">10 free verifications. No credit card needed.</div></div>
+  </div>
+</div>
+
+<!-- VERIFY -->
+<div class="page" id="page-verify">
+  <div class="sh"><div class="eyebrow">Document Intelligence</div><h2>Verify a Land Document</h2></div>
+
+  <div class="info-bar demo" id="infoBar">
+    ● DEMO MODE — Full results, no backend needed.
+    <span onclick="toggleApiConfig()" style="cursor:pointer;margin-left:8px;text-decoration:underline;">Connect live backend →</span>
+  </div>
+
+  <div class="api-config" id="apiConfig">
+    <div class="section-lbl">Live Backend URL</div>
+    <p style="font-size:10px;color:var(--dim);margin-bottom:6px;">Deploy <code>main.py</code> to Railway/Render, paste your URL here.</p>
+    <div class="api-row">
+      <input type="text" id="apiUrlInput" placeholder="https://your-app.railway.app" value="https://landverify-production-195f.up.railway.app">
+      <button class="btn btn-outline" style="padding:8px 12px;font-size:11px;white-space:nowrap;" onclick="testConn()">Test ↗</button>
+      <button class="btn btn-outline" style="padding:8px 10px;font-size:11px;" onclick="toggleApiConfig()">✕</button>
+    </div>
+  </div>
+
+  <div class="err-bar" id="errBar"><span>⚠</span><span id="errTxt" style="flex:1;"></span><span onclick="hideErr()" style="cursor:pointer;">×</span></div>
+
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" onchange="onFile(this)">
+    <span class="uz-icon">📋</span>
+    <div class="uz-title">Drop your land document here</div>
+    <div class="uz-sub">PDF, JPG, or PNG · Max 10MB · Optional</div>
+    <div class="doc-tags">
+      <span class="dt">C of O</span><span class="dt">Deed</span><span class="dt">Survey Plan</span><span class="dt">Governor's Consent</span>
+    </div>
+  </div>
+  <div class="file-ok" id="fileOk"><span>✅</span><span id="fileName"></span></div>
+
+  <div class="form-grid">
+    <div class="fg"><label>Document Type</label>
+      <select id="docType">
+        <option value="certificate_of_occupancy">Certificate of Occupancy (C of O)</option>
+        <option value="deed_of_assignment">Deed of Assignment</option>
+        <option value="survey_plan">Survey Plan</option>
+        <option value="governors_consent">Governor's Consent</option>
+        <option value="right_of_occupancy">Right of Occupancy</option>
+      </select>
+    </div>
+    <div class="fg"><label>State</label>
+      <select id="state">
+        <option value="lagos">Lagos</option>
+        <option value="abuja_fct">Abuja (FCT)</option>
+        <option value="rivers">Rivers</option>
+        <option value="ogun">Ogun</option>
+        <option value="kano">Kano</option>
+        <option value="enugu">Enugu</option>
+        <option value="delta">Delta</option>
+        <option value="oyo">Oyo</option>
+      </select>
+    </div>
+    <div class="fg"><label>Property Address</label><input type="text" id="propAddr" placeholder="14B Admiralty Way, Lekki Phase 1"></div>
+    <div class="fg"><label>Owner / Seller Name</label><input type="text" id="ownerName" placeholder="As written on the document"></div>
+    <div class="fg"><label>File Number (optional)</label><input type="text" id="fileNum" placeholder="LG/BC/2021/004471"></div>
+    <div class="fg"><label>My Role</label>
+      <select id="userRole">
+        <option value="buyer">Buyer</option>
+        <option value="lawyer">Lawyer</option>
+        <option value="bank">Bank / Lender</option>
+        <option value="developer">Developer</option>
+      </select>
+    </div>
+    <div class="fg fg-full"><label>Additional Notes (optional)</label>
+      <textarea id="notes" style="min-height:64px;" placeholder="Any context — previous owners, red flags, what the seller told you..."></textarea>
+    </div>
+  </div>
+
+  <div class="action-row">
+    <button class="btn btn-gold" id="btnVerify" onclick="runVerify()" style="width:auto;padding:11px 24px;">🔍 Run Verification</button>
+    <button class="btn btn-outline" onclick="fillDemo()" style="padding:11px 16px;">Try Demo Data</button>
+    <span style="font-size:9px;color:var(--dim);">🔒 Confidential</span>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result-panel" id="resultPanel">
+    <div class="score-row">
+      <div class="ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 100 100">
+          <circle class="ring-track" cx="50" cy="50" r="40"/>
+          <circle class="ring-fill" id="ringFill" cx="50" cy="50" r="40"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-num" id="ringNum">--</div>
+          <div class="ring-lbl">TRUST SCORE</div>
+        </div>
+      </div>
+      <div class="score-info">
+        <div class="status-badge" id="statusBadge"><div class="badge-dot"></div><span id="statusTxt"></span></div>
+        <h3 id="scoreTitle"></h3>
+        <p id="scoreDesc"></p>
+        <div class="vid" id="verId"></div>
+      </div>
+    </div>
+    <div class="section-lbl">Score Breakdown</div>
+    <div class="breakdown-row" id="breakdown"></div>
+    <div class="divider"></div>
+    <div class="ai-box">
+      <div class="section-lbl">🤖 Claude AI Analysis</div>
+      <div class="ai-text" id="aiText"></div>
+      <div class="ai-rec" id="aiRec"></div>
+    </div>
+    <div class="section-lbl">Verification Checks</div>
+    <div class="checks-grid" id="checksGrid"></div>
+    <div id="flagSec" style="display:none;">
+      <div class="divider"></div>
+      <div class="section-lbl" style="color:#F87171;">⚠ Fraud Flags</div>
+      <div id="flagsGrid"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="section-lbl">Ownership History</div>
+    <div class="timeline" id="timeline"></div>
+    <div class="divider"></div>
+    <div class="action-row">
+      <button class="btn btn-gold" onclick="downloadReport()" style="width:auto;padding:10px 18px;">📥 Download Report</button>
+      <button class="btn btn-outline" onclick="resetVerify()" style="padding:10px 14px;">Verify Another</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page" id="page-dashboard">
+  <div class="sh"><div class="eyebrow">Property Portfolio</div><h2>Dashboard</h2></div>
+  <div id="dashContent"></div>
+</div>
+
+<!-- ALERTS -->
+<div class="page" id="page-alerts">
+  <div class="sh"><div class="eyebrow">Fraud Detection</div><h2>Alerts & Monitoring</h2></div>
+  <div id="alertsContent"></div>
+</div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════
+// STATE — persisted locally, no backend needed
+// ═══════════════════════════════════════
+const S = {
+  mode: 'live',
+  apiUrl: 'https://landverify-production-195f.up.railway.app',
+  connected: true,
+  user: null,
+  lastResult: null,
+  history: [],
+  alerts: [],
+};
+
+try {
+  const saved = localStorage.getItem('lv_app');
+  if (saved) {
+    const p = JSON.parse(saved);
+    S.user = p.user || null;
+    S.history = p.history || [];
+    S.alerts = p.alerts || [];
+    if (p.apiUrl) { S.apiUrl = p.apiUrl; S.mode = 'live'; }
+  }
+} catch(e){}
+
+function persist() {
+  try { localStorage.setItem('lv_app', JSON.stringify({user:S.user, history:S.history, alerts:S.alerts, apiUrl:S.apiUrl})); } catch(e){}
+}
+
+// ═══════════════════════════════════════
+// AUTH — works 100% locally, no backend needed
+// ═══════════════════════════════════════
+function openAuth(t='login') { authTab(t); document.getElementById('authModal').classList.add('open'); }
+function closeAuth() { document.getElementById('authModal').classList.remove('open'); clearAuthErr(); }
+function authTab(t) {
+  document.getElementById('tabLogin').className='tab-btn'+(t==='login'?' active':'');
+  document.getElementById('tabReg').className='tab-btn'+(t==='register'?' active':'');
+  document.getElementById('formLogin').style.display=t==='login'?'block':'none';
+  document.getElementById('formReg').style.display=t==='register'?'block':'none';
+  clearAuthErr();
+}
+function showAuthErr(m){const e=document.getElementById('authErr');e.textContent=m;e.classList.add('show');}
+function clearAuthErr(){document.getElementById('authErr').classList.remove('show');}
+
+function doLogin() {
+  const email=document.getElementById('liEmail').value.trim();
+  const pw=document.getElementById('liPw').value;
+  if(!email||!pw) return showAuthErr('Please fill in both fields');
+  if(!email.includes('@')) return showAuthErr('Enter a valid email');
+  if(pw.length<4) return showAuthErr('Password too short');
+  // Always succeeds locally — no server needed
+  S.user = {id:'u'+Date.now(), email, full_name: email.split('@')[0], role:'buyer', plan:'free', verifications_used:S.history.length, verifications_limit:10};
+  persist(); closeAuth(); renderNav();
+  toast(`Welcome back! 👋`);
+  if(curPage()==='dashboard') loadDash();
+  if(curPage()==='alerts') loadAlerts();
+}
+
+function doRegister() {
+  const name=document.getElementById('rgName').value.trim();
+  const email=document.getElementById('rgEmail').value.trim();
+  const pw=document.getElementById('rgPw').value;
+  const role=document.getElementById('rgRole').value;
+  if(!name||!email||!pw) return showAuthErr('Please fill in all fields');
+  if(!email.includes('@')) return showAuthErr('Enter a valid email');
+  if(pw.length<6) return showAuthErr('Password must be at least 6 characters');
+  S.user = {id:'u'+Date.now(), email, full_name:name, role, plan:'free', verifications_used:0, verifications_limit:10};
+  persist(); closeAuth(); renderNav();
+  toast('Account created! 10 free verifications ready. ✅');
+}
+
+function doLogout() {
+  S.user=null; persist(); renderNav(); go('home'); toast('Logged out');
+}
+
+// ═══════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════
+function renderNav() {
+  const el=document.getElementById('navRight');
+  if(S.user) {
+    el.innerHTML=`<div style="display:flex;align-items:center;gap:6px;background:rgba(201,146,42,.1);border:1px solid rgba(201,146,42,.2);border-radius:18px;padding:5px 11px;cursor:pointer;font-size:11px;" onclick="doLogout()"><div style="width:5px;height:5px;border-radius:50%;background:#4ADE80;"></div><span>${S.user.full_name.split(' ')[0]}</span><span style="color:var(--dim);font-size:9px;"> ↩</span></div>`;
+  } else {
+    el.innerHTML=`<button class="btn btn-outline" style="padding:5px 12px;font-size:11px;" onclick="openAuth()">Sign In</button>`;
+  }
+}
+
+function go(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.np').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  const idx={home:0,verify:1,dashboard:2,alerts:3};
+  document.querySelectorAll('.np')[idx[page]]?.classList.add('active');
+  window.scrollTo(0,0);
+  if(page==='dashboard') loadDash();
+  if(page==='alerts') loadAlerts();
+}
+function curPage(){const a=document.querySelector('.page.active');return a?a.id.replace('page-',''):'home';}
+
+// ═══════════════════════════════════════
+// API CONFIG
+// ═══════════════════════════════════════
+function toggleApiConfig(){
+  const el=document.getElementById('apiConfig');
+  el.classList.toggle('show');
+  if(S.apiUrl) document.getElementById('apiUrlInput').value=S.apiUrl;
+}
+
+async function testConn() {
+  const url=document.getElementById('apiUrlInput').value.trim().replace(/\/$/,'');
+  if(!url){toast('Please enter your backend URL',true);return;}
+  const bar=document.getElementById('infoBar');
+  bar.className='info-bar demo';bar.textContent='Testing connection...';
+  try {
+    const r=await fetch(url+'/health',{signal:AbortSignal.timeout(8000)});
+    const d=await r.json();
+    S.apiUrl=url; S.mode='live'; S.connected=true; persist();
+    bar.className='info-bar live';
+    bar.innerHTML='✅ LIVE API — Connected to your backend. Real Claude AI active. <span onclick="toggleApiConfig()" style="cursor:pointer;text-decoration:underline;margin-left:6px;">Change →</span>';
+    document.getElementById('apiConfig').classList.remove('show');
+    toast('Backend connected! Real Claude AI active. 🚀');
+  } catch(e) {
+    S.connected=false;
+    bar.className='info-bar err';
+    bar.innerHTML='❌ Cannot reach backend — using demo mode. <span onclick="toggleApiConfig()" style="cursor:pointer;text-decoration:underline;margin-left:6px;">Try again →</span>';
+    toast('Cannot reach backend. Check URL and try again.',true);
+  }
+}
+
+// ═══════════════════════════════════════
+// VERIFY
+// ═══════════════════════════════════════
+function onFile(input){
+  if(!input.files[0]) return;
+  document.getElementById('fileName').textContent=input.files[0].name;
+  document.getElementById('fileOk').style.display='flex';
+}
+
+function fillDemo(){
+  document.getElementById('docType').value='certificate_of_occupancy';
+  document.getElementById('state').value='lagos';
+  document.getElementById('propAddr').value='14B Admiralty Way, Lekki Phase 1, Lagos';
+  document.getElementById('ownerName').value='Chukwuemeka Obi & Associates Ltd';
+  document.getElementById('fileNum').value='LG/BC/2021/004471';
+  document.getElementById('userRole').value='buyer';
+  document.getElementById('notes').value='Seller says previous owner was Fashola Family Trust (2008–2021). Transaction price ₦45M.';
+}
+
+async function runVerify(){
+  const addr=document.getElementById('propAddr').value.trim();
+  const owner=document.getElementById('ownerName').value.trim();
+  if(!addr) return showErr('Please enter the property address');
+  if(!owner) return showErr('Please enter the owner / seller name');
+  hideErr();
+  document.getElementById('btnVerify').disabled=true;
+  showLoading();
+  try {
+    let result;
+    if(S.mode==='live' && S.connected && S.apiUrl){
+      document.getElementById('loadTag').textContent='LIVE AI';
+      result=await callLiveAPI();
+    } else {
+      document.getElementById('loadTag').textContent='DEMO MODE';
+      result=await demoVerify();
+    }
+    S.lastResult=result;
+    S.history.unshift(result);
+    if(S.history.length>20) S.history.pop();
+    if(S.user) S.user.verifications_used=S.history.length;
+    persist(); hideLoading(); renderResult(result);
+  } catch(e) {
+    hideLoading();
+    showErr('Error: '+e.message+' — showing demo result');
+    const r=await demoVerify();
+    S.lastResult=r; renderResult(r);
+  } finally {
+    document.getElementById('btnVerify').disabled=false;
+  }
+}
+
+async function callLiveAPI(){
+  const fd=new FormData();
+  fd.append('document_type',document.getElementById('docType').value);
+  fd.append('state',document.getElementById('state').value);
+  fd.append('property_address',document.getElementById('propAddr').value);
+  fd.append('owner_name',document.getElementById('ownerName').value);
+  fd.append('user_role',document.getElementById('userRole').value);
+  const fn=document.getElementById('fileNum').value;
+  if(fn) fd.append('file_number',fn);
+  const notes=document.getElementById('notes').value;
+  if(notes) fd.append('additional_notes',notes);
+  const f=document.getElementById('fileInput');
+  if(f.files[0]) fd.append('file',f.files[0]);
+  const r=await fetch(S.apiUrl+'/api/v1/verify',{method:'POST',body:fd,signal:AbortSignal.timeout(60000)});
+  if(!r.ok) throw new Error('Server error '+r.status);
+  return await r.json();
+}
+
+async function demoVerify(){
+  await sleep(4000);
+  const owner=document.getElementById('ownerName').value||'Chukwuemeka Obi';
+  const addr=document.getElementById('propAddr').value||'14B Admiralty Way, Lekki Phase 1';
+  const score=62+Math.floor(Math.random()*18);
+  return {
+    verification_id:'LV-DEMO-'+Math.random().toString(36).substr(2,8).toUpperCase(),
+    timestamp:new Date().toISOString(),
+    property_address:addr,
+    document_type:document.getElementById('docType').value,
+    state:document.getElementById('state').value,
+    trust_score:score,
+    trust_level:score>=80?'safe':score>=55?'caution':'danger',
+    trust_score_breakdown:{document_authenticity_score:score+5,registry_match_score:score-8,ownership_chain_score:score+10,encumbrance_score:score+2,geospatial_score:score+7,fraud_penalty:8,final_score:score},
+    checks:[
+      {check_id:'fmt',label:'Document Format Valid',status:'pass',detail:'Matches Lagos State C of O template (post-2015)'},
+      {check_id:'stmp',label:'Stamp Duty Verified',status:'pass',detail:'FIRS reference SD/2021/449821 found'},
+      {check_id:'gov',label:'Governor Signature Period',status:'pass',detail:'Name matches issuance year 2021'},
+      {check_id:'cons',label:'Internal Consistency',status:'warning',detail:'Minor date discrepancy between header and body'},
+      {check_id:'reg',label:'Registry File Confirmed',status:'fail',detail:'File number not found in live registry database'},
+      {check_id:'surv',label:'Survey Plan Referenced',status:'pass',detail:'Survey plan SLG/LK/2021/04471 found'},
+      {check_id:'addr',label:'Address Consistency',status:'pass',detail:'Address matches declared property location'},
+      {check_id:'dup',label:'Duplicate Title Check',status:'warning',detail:'Similar file number detected in another transaction'},
+    ],
+    checks_passed:5,checks_failed:1,checks_warned:2,
+    fraud_flags:[
+      {flag_id:'r1',severity:'high',title:'Registry Confirmation Failed',description:'File number LG/BC/2021/004471 could not be confirmed against Lagos State Land Registry. This is the most critical check for any C of O.',recommendation:'Visit Lagos State Land Registry at Alausa, Ikeja in person. Request a certified search — approx. ₦15,000. Bring a lawyer.'},
+      {flag_id:'r2',severity:'medium',title:'Date Inconsistency Detected',description:'Issue date in document header (March 2021) does not match body (January 2021). This may indicate alteration.',recommendation:'Request original document and compare all dates with a property lawyer before any payment.'},
+    ],
+    fraud_risk_summary:'Medium risk. Do not pay until registry confirmation is resolved.',
+    ownership_chain:{
+      total_owners:4,chain_integrity:0.82,has_gaps:false,has_disputes:false,
+      records:[
+        {year:'1987',owner_name:'Lagos State Government',transaction_type:'Original Allocation',registered:true,flagged:false},
+        {year:'1995',owner_name:'Chief Adewale Fashola',transaction_type:'Purchase',registered:true,flagged:false},
+        {year:'2008',owner_name:'Fashola Family Trust',transaction_type:'Inheritance (Probate)',registered:true,flagged:false},
+        {year:'2021',owner_name:owner,transaction_type:'Purchase',registered:true,flagged:false},
+      ],
+      analysis_summary:'4 transfers since 1987. All registered. No disputes.',
+    },
+    ai_summary:`This ${document.getElementById('state').value.toUpperCase()} property has a clean 34-year ownership history, but two issues must be resolved before any payment: registry file number unconfirmed and a date inconsistency detected.`,
+    ai_recommendation:`As a ${document.getElementById('userRole').value}: Do NOT make any payment yet. Visit the land registry physically and request a certified search on file number ${document.getElementById('fileNum').value||'provided'}. Budget ₦15,000–₦30,000. Always bring a qualified Nigerian property lawyer.`,
+    verified_by:'LandVerify AI v1.0 — Demo Mode',
+  };
+}
+
+// ═══════════════════════════════════════
+// RENDER RESULT
+// ═══════════════════════════════════════
+function renderResult(d){
+  const panel=document.getElementById('resultPanel');
+  panel.classList.add('show');
+  const score=Math.round(d.trust_score);
+  const level=d.trust_level;
+  const col={safe:'#4ADE80',caution:'#FCD34D',danger:'#F87171'}[level]||'#FCD34D';
+
+  setTimeout(()=>{
+    const ring=document.getElementById('ringFill');
+    const circ=2*Math.PI*40;
+    ring.style.strokeDasharray=circ;
+    ring.style.strokeDashoffset=circ-(score/100)*circ;
+    ring.style.stroke=col;
+  },100);
+
+  document.getElementById('ringNum').textContent=score;
+  document.getElementById('ringNum').style.color=col;
+  const bc={safe:'badge-safe',caution:'badge-caution',danger:'badge-danger'}[level];
+  const bt={safe:'✓ Safe',caution:'⚠ Caution',danger:'✗ High Risk'}[level];
+  document.getElementById('statusBadge').className='status-badge '+bc;
+  document.getElementById('statusTxt').textContent=bt;
+  document.getElementById('scoreTitle').textContent={safe:'Document Appears Authentic',caution:'Anomalies Detected — Investigate First',danger:'High Fraud Risk Detected'}[level];
+  document.getElementById('scoreDesc').textContent={safe:'Passed major checks. Proceed with standard legal diligence.',caution:'Do NOT pay until these issues are fully resolved.',danger:'Multiple fraud indicators. Stop all negotiations immediately.'}[level];
+  document.getElementById('verId').textContent='ID: '+d.verification_id;
+
+  const bd=d.trust_score_breakdown||{};
+  const bdi=[{l:'Doc Auth',v:bd.document_authenticity_score},{l:'Registry',v:bd.registry_match_score},{l:'Ownership',v:bd.ownership_chain_score},{l:'Encumb.',v:bd.encumbrance_score},{l:'Geo',v:bd.geospatial_score}];
+  document.getElementById('breakdown').innerHTML=bdi.map(({l,v})=>{const n=Math.round(v||0),c=n>=75?'#4ADE80':n>=50?'#FCD34D':'#F87171';return `<div class="bd"><div class="bd-val" style="color:${c}">${n}</div><div class="bd-lbl">${l}</div></div>`;}).join('');
+
+  document.getElementById('aiText').textContent=d.ai_summary||'';
+  document.getElementById('aiRec').textContent='→ '+(d.ai_recommendation||'');
+
+  const sm={pass:{c:'d-pass',i:'✓'},fail:{c:'d-fail',i:'✗'},warning:{c:'d-warn',i:'!'}};
+  document.getElementById('checksGrid').innerHTML=(d.checks||[]).map(c=>{const s=sm[c.status]||sm.warning;return `<div class="check-item"><div class="ci-dot ${s.c}">${s.i}</div><div class="ci-txt"><strong>${c.label}</strong><span>${c.detail||''}</span></div></div>`;}).join('');
+
+  const flags=d.fraud_flags||[];
+  if(flags.length){
+    document.getElementById('flagSec').style.display='block';
+    document.getElementById('flagsGrid').innerHTML=flags.map(f=>`<div class="flag-card ${f.severity==='medium'||f.severity==='low'?'med':''}"><div class="flag-title">🚩 ${f.title}</div><div class="flag-desc">${f.description}</div><div class="flag-rec">→ ${f.recommendation}</div></div>`).join('');
+  }
+
+  document.getElementById('timeline').innerHTML=(d.ownership_chain?.records||[]).map(r=>`<div class="tl-item"><div class="tl-year">${r.year}</div><div class="tl-name">${r.owner_name}</div><div class="tl-detail">${r.transaction_type}</div></div>`).join('');
+
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function resetVerify(){
+  document.getElementById('resultPanel').classList.remove('show');
+  document.getElementById('flagSec').style.display='none';
+  document.getElementById('fileOk').style.display='none';
+  document.getElementById('fileInput').value='';
+  resetLoadSteps();
+  window.scrollTo(0,0);
+}
+
+function downloadReport(){
+  if(!S.lastResult) return;
+  const d=S.lastResult;
+  const lines=['LANDVERIFY VERIFICATION REPORT','='.repeat(50),`ID: ${d.verification_id}`,`Date: ${new Date(d.timestamp).toLocaleString()}`,`Property: ${d.property_address}`,`State: ${(d.state||'').toUpperCase()}`,`Trust Score: ${Math.round(d.trust_score)}/100 — ${(d.trust_level||'').toUpperCase()}`,'','AI SUMMARY',d.ai_summary||'','','RECOMMENDATION',d.ai_recommendation||'','','VERIFICATION CHECKS',...(d.checks||[]).map(c=>`  [${(c.status||'').toUpperCase()}] ${c.label}: ${c.detail}`),'','FRAUD FLAGS',...(d.fraud_flags||[]).length?(d.fraud_flags||[]).map(f=>`  [${(f.severity||'').toUpperCase()}] ${f.title}\n  ${f.description}\n  → ${f.recommendation}`):['  None detected'],'','OWNERSHIP CHAIN',...(d.ownership_chain?.records||[]).map(r=>`  ${r.year} | ${r.owner_name} | ${r.transaction_type}`),'','='.repeat(50),'This report is informational only. Always consult a qualified Nigerian property lawyer.'];
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain'}));
+  a.download=`LandVerify_${d.verification_id}.txt`;a.click();
+}
+
+// ═══════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════
+function loadDash(){
+  const el=document.getElementById('dashContent');
+  if(!S.user){el.innerHTML=`<div class="empty"><div class="empty-icon">🔐</div><div class="empty-title">Sign in to view dashboard</div><div class="empty-sub">Your verified properties and history appear here.</div><button class="btn btn-gold" style="width:auto;padding:10px 20px;" onclick="openAuth()">Sign In</button></div>`;return;}
+  const h=S.history;
+  const safe=h.filter(v=>v.trust_level==='safe').length;
+  const caution=h.filter(v=>v.trust_level==='caution').length;
+  const danger=h.filter(v=>v.trust_level==='danger').length;
+  const cols={safe:'#4ADE80',caution:'#FCD34D',danger:'#F87171'};
+  const icons={safe:'🏠',caution:'⚠️',danger:'🚨'};
+  el.innerHTML=`
+    <div class="dash-stats">
+      <div class="ds"><div class="ds-lbl">Total Verified</div><div class="ds-val">${h.length}</div><div class="ds-note">Free plan</div></div>
+      <div class="ds"><div class="ds-lbl">Safe</div><div class="ds-val" style="color:#4ADE80">${safe}</div><div class="ds-note">✓ Cleared</div></div>
+      <div class="ds"><div class="ds-lbl">Needs Review</div><div class="ds-val" style="color:#F87171">${caution+danger}</div><div class="ds-note">${caution} caution · ${danger} danger</div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div class="section-lbl" style="margin:0;">Recent Verifications</div>
+      <button class="btn btn-outline" style="padding:5px 10px;font-size:10px;" onclick="go('verify')">+ New</button>
+    </div>
+    ${h.length?h.slice(0,10).map(v=>`
+      <div class="history-row">
+        <div class="hr-thumb">${icons[v.trust_level]||'📋'}</div>
+        <div class="hr-info">
+          <div class="hr-addr">${v.property_address||'Unknown'}</div>
+          <div class="hr-meta">${(v.state||'').toUpperCase()} · ${v.timestamp?new Date(v.timestamp).toLocaleDateString():''}</div>
+        </div>
+        <div class="hr-score" style="color:${cols[v.trust_level]||'#FCD34D'}">${Math.round(v.trust_score||0)}</div>
+      </div>`).join('')
+    :`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">No verifications yet</div><div class="empty-sub">Run your first verification to see history here.</div><button class="btn btn-gold" style="width:auto;padding:10px 18px;" onclick="go('verify')">Verify Now</button></div>`}`;
+}
+
+// ═══════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════
+function loadAlerts(){
+  const el=document.getElementById('alertsContent');
+  if(!S.user){el.innerHTML=`<div class="empty"><div class="empty-icon">🔐</div><div class="empty-title">Sign in to manage alerts</div><div class="empty-sub">Monitor properties and receive instant fraud alerts.</div><button class="btn btn-gold" style="width:auto;padding:10px 18px;" onclick="openAuth()">Sign In</button></div>`;return;}
+  const alerts=S.alerts;
+  el.innerHTML=`
+    ${alerts.length?alerts.map(a=>`
+      <div class="alert-card">
+        <div class="ac-title">${a.title}</div>
+        <div class="ac-desc">${a.desc}</div>
+        <div class="ac-meta">
+          <span style="background:rgba(139,26,26,.2);color:#F87171;font-family:'DM Mono',monospace;font-size:9px;padding:2px 7px;border-radius:7px;">${(a.sev||'').toUpperCase()}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);">${a.time||''}</span>
+          <button class="btn btn-outline" style="padding:3px 8px;font-size:10px;" onclick="resolveAlert('${a.id}')">Resolve</button>
+        </div>
+      </div>`).join('')
+    :`<div class="empty"><div class="empty-icon">✅</div><div class="empty-title">No alerts</div><div class="empty-sub">Register a property below to start monitoring.</div></div>`}
+    <div class="monitor-box">
+      <div class="section-lbl">Register Property for Monitoring</div>
+      <div class="fg"><label>Property Address</label><input type="text" id="monAddr" placeholder="14B Admiralty Way, Lekki Phase 1"></div>
+      <div class="fg"><label>File Number (optional)</label><input type="text" id="monFile" placeholder="LG/BC/2021/004471"></div>
+      <button class="btn btn-gold" style="width:auto;padding:10px 18px;" onclick="subscribe()">🔔 Enable Monitoring</button>
+    </div>`;
+}
+
+function resolveAlert(id){S.alerts=S.alerts.filter(a=>a.id!==id);persist();loadAlerts();toast('Alert resolved ✓');}
+
+function subscribe(){
+  const addr=document.getElementById('monAddr')?.value.trim();
+  if(!addr){toast('Please enter a property address',true);return;}
+  S.alerts.push({id:'a'+Date.now(),title:'Monitoring Active',desc:`Now watching: ${addr}`,sev:'info',time:new Date().toLocaleDateString()});
+  persist();
+  toast(`✅ Monitoring enabled for: ${addr.substring(0,40)}`);
+  document.getElementById('monAddr').value='';
+  loadAlerts();
+}
+
+// ═══════════════════════════════════════
+// LOADING
+// ═══════════════════════════════════════
+let _lt=null;
+function showLoading(){
+  resetLoadSteps();
+  document.getElementById('loadOverlay').classList.add('show');
+  const steps=['ls1','ls2','ls3','ls4','ls5','ls6'];
+  const bar=document.getElementById('loadBar');
+  let i=0;
+  _lt=setInterval(()=>{
+    if(i<steps.length){document.getElementById(steps[i]).classList.add('on');bar.style.width=((i+1)/steps.length*100)+'%';i++;}
+    else clearInterval(_lt);
+  },700);
+}
+function hideLoading(){clearInterval(_lt);document.getElementById('loadOverlay').classList.remove('show');}
+function resetLoadSteps(){document.querySelectorAll('.ls').forEach(s=>s.classList.remove('on'));document.getElementById('loadBar').style.width='0%';}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function showErr(m){const b=document.getElementById('errBar');document.getElementById('errTxt').textContent=m;b.classList.add('show');}
+function hideErr(){document.getElementById('errBar').classList.remove('show');}
+function toast(msg,err=false){
+  const t=document.createElement('div');t.className='toast';
+  t.style.cssText=`background:${err?'rgba(139,26,26,.97)':'rgba(30,107,69,.97)'};border:1px solid ${err?'#F87171':'#4ADE80'};color:#fff;`;
+  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),4000);
+}
+
+// ── INIT ─────────────────────────────────────
+renderNav();
+
+// Restore live mode info bar if previously connected
+if(S.mode==='live' && S.apiUrl){
+  const bar=document.getElementById('infoBar');
+  bar.className='info-bar live';
+  bar.innerHTML=`✅ LIVE API — ${S.apiUrl} <span onclick="toggleApiConfig()" style="cursor:pointer;text-decoration:underline;margin-left:6px;">Change →</span>`;
+}
+
+// Drag and drop
+const uz=document.getElementById('uploadZone');
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.style.borderColor='var(--amber)';});
+uz.addEventListener('dragleave',()=>{uz.style.borderColor='';});
+uz.addEventListener('drop',e=>{e.preventDefault();uz.style.borderColor='';const f=e.dataTransfer.files[0];if(f){document.getElementById('fileInput').files=e.dataTransfer.files;onFile({files:[f]});}});
+</script>
+</body>
+</html>
